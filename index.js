@@ -16,7 +16,7 @@ const app = express();
 const BLOGGER_POST_URL = "https://khbfy.blogspot.com/p/movie.html"; // Replace with your actual Blogger post URL
 
 // Set webhook URL dynamically based on Render's domain (update with your Render service name)
-const webhookUrl = `https://telefire.onrender.com/bot${botToken}`;
+const webhookUrl = `https://your-service-name.onrender.com/bot${botToken}`;
 bot.setWebHook(webhookUrl);
 
 // Middleware to parse JSON bodies
@@ -40,3 +40,53 @@ async function fetchMovieData() {
 
     if (startIndex === -1) {
       throw new Error("Could not find JSON data in the specified script tag.");
+    }
+
+    const jsonStartIndex = htmlContent.indexOf('{', startIndex);
+    const jsonEndIndex = htmlContent.indexOf('</script>', jsonStartIndex);
+    const jsonString = htmlContent.substring(jsonStartIndex, jsonEndIndex).trim();
+
+    // Parse JSON string into JavaScript object
+    const movieData = JSON.parse(jsonString);
+    return movieData.movies || {};
+  } catch (error) {
+    console.error(`Error fetching or parsing movie data: ${error.message}`);
+    return {};
+  }
+}
+
+// Handler to print the file ID of any document or video sent to the bot
+bot.on('message', async (msg) => {
+  const chatId = msg.chat.id;
+
+  if (msg.document) {  // If a document is sent
+    const fileId = msg.document.file_id;
+    bot.sendMessage(chatId, `Document file ID: ${fileId}`);
+    console.log(`Document file ID: ${fileId}`);
+  } else if (msg.video) {  // If a video is sent
+    const fileId = msg.video.file_id;
+    bot.sendMessage(chatId, `Video file ID: ${fileId}`);
+    console.log(`Video file ID: ${fileId}`);
+  }
+});
+
+// Handler for the /start command
+bot.onText(/\/start (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const movieId = match[1].toLowerCase();  // Extract movie ID from the command
+
+  const movies = await fetchMovieData();  // Fetch movie data dynamically
+
+  if (movies[movieId]) {
+    const movieFileId = movies[movieId];
+    bot.sendDocument(chatId, movieFileId);  // Send the file without any link
+  } else {
+    bot.sendMessage(chatId, `Sorry, the movie ID '${movieId}' is not available.`);
+  }
+});
+
+// Start the Express server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Bot server is running on port ${PORT}`);
+});
