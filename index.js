@@ -39,4 +39,4 @@ async function fetchMovieData() {
     const startIndex = htmlContent.indexOf(scriptTagStart);
 
     if (startIndex === -1) {
-      throw new Error("Could not find JSON data in the specified script tag.")
+      throw new Error("Could not find JSON data in the specified script tag.");
