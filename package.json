@@ -9,6 +9,6 @@
   "dependencies": {
     "axios": "^0.21.1",
     "node-telegram-bot-api": "^0.56.0",
-    "dotenv": "^16.3.1"  // Add dotenv here with the latest version
+    "dotenv": "^16.3.1" 
   }
 }
