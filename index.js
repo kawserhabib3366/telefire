@@ -11,7 +11,7 @@ const app = express();
 const BLOGGER_POST_URL = "https://khbfy.blogspot.com/p/movie.html"; 
 
 // Set webhook URL dynamically based on Render's domain (update with your Render service name)
-const webhookUrl = `https://telefire.com/bot${botToken}`;
+const webhookUrl = `https://telefire.onrender.com/bot${botToken}`;
 bot.setWebHook(webhookUrl);
 
 // Middleware to parse JSON bodies
