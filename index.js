@@ -1,17 +1,27 @@
+const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+require('dotenv').config(); // Load environment variables
 
-// Load environment variables from a .env file
-require('dotenv').config();
-
-// Retrieve the bot token from environment variables
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
+const bot = new TelegramBot(botToken);
+const app = express();
 
-// Create an instance of the Telegram bot with polling enabled
-const bot = new TelegramBot(botToken, { polling: true });
+// Your Blogger post URL
+const BLOGGER_POST_URL = "https://khbfy.blogspot.com/p/movie.html"; 
 
-// URL of your Blogger post where the JSON is embedded
-const BLOGGER_POST_URL = "https://khbfy.blogspot.com/p/movie.html"; // Replace with your actual Blogger post URL
+// Set webhook URL dynamically based on Render's domain (update with your Render service name)
+const webhookUrl = `https://your-service-name.onrender.com/bot${botToken}`;
+bot.setWebHook(webhookUrl);
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// Endpoint to receive updates from Telegram
+app.post(`/bot${botToken}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
 
 // Function to fetch movie data from the Blogger post
 async function fetchMovieData() {
@@ -19,7 +29,6 @@ async function fetchMovieData() {
     const response = await axios.get(BLOGGER_POST_URL);
     const htmlContent = response.data;
 
-    // Extract JSON from the <script> tag with id="movie-data"
     const scriptTagStart = '<script id="movie-data" type="application/json">';
     const startIndex = htmlContent.indexOf(scriptTagStart);
 
@@ -31,7 +40,6 @@ async function fetchMovieData() {
     const jsonEndIndex = htmlContent.indexOf('</script>', jsonStartIndex);
     const jsonString = htmlContent.substring(jsonStartIndex, jsonEndIndex).trim();
 
-    // Parse JSON string into JavaScript object
     const movieData = JSON.parse(jsonString);
     return movieData.movies || {};
   } catch (error) {
@@ -40,7 +48,7 @@ async function fetchMovieData() {
   }
 }
 
-// Handler to print the file ID of any document or video sent to the bot
+// Handlers for bot commands and messages
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
 
@@ -55,7 +63,6 @@ bot.on('message', async (msg) => {
   }
 });
 
-// Handler for the /start command
 bot.onText(/\/start (.+)/, async (msg, match) => {
   const chatId = msg.chat.id;
   const movieId = match[1].toLowerCase();  // Extract movie ID from the command
@@ -70,4 +77,8 @@ bot.onText(/\/start (.+)/, async (msg, match) => {
   }
 });
 
-console.log('Telegram bot is running with polling...');
+// Start the Express server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Bot server is running on port ${PORT}`);
+});
